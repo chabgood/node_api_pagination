@@ -1,36 +1,36 @@
 const express = require('express')
 const app = express()
 
-const users = [
-  {id: 1, name: 'moo'},
-  {id: 2, name: 'moo2'},
-  {id: 3, name: 'moo3'},
-  {id: 4, name: 'moo4'},
-  {id: 5, name: 'moo5'},
-  {id: 6, name: 'moo6'},
-  {id: 7, name: 'moo7'},
-  {id: 8, name: 'moo8'},
-  {id: 9, name: 'moo9'},
-  {id: 10, name: 'moo10'},
-  {id: 11, name: 'moo11'},
-  
-] 
+const mongoose = require('mongoose')
+const User = require('./users')
+mongoose.connect('mongodb://localhost/pagination', { useUnifiedTopology: true, useNewUrlParser: true } )
+const db = mongoose.connection
 
-const posts = [
+db.once('open', async () => {
+  if(await User.countDocuments().exec() > 0) return
 
-]
-
-app.get('/posts' , paginatedResults(posts), (req, res) => {
-  res.json(postsres.paginatedResults)
+  Promise.all([
+    User.create({ name: 'moo1'}),
+    User.create({ name: 'moo2'}),
+    User.create({ name: 'moo3'}),
+    User.create({ name: 'moo4'}),
+    User.create({ name: 'moo5'}),
+    User.create({ name: 'moo6'}),
+    User.create({ name: 'moo7'}),
+    User.create({ name: 'moo8'}),
+    User.create({ name: 'moo9'}),
+    User.create({ name: 'moo10'}),
+    
+  ]).then(() => console.log('added users'))
 })
 
-app.get('/users', paginatedResults(users), (req, res) => {
+app.get('/users', paginatedResults(User), (req, res) => {
   
   res.json(res.paginatedResults)
 })
 
 function paginatedResults(model) {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     const page = parseInt(req.query.page)
     const limit = parseInt(req.query.limit)
 
@@ -52,7 +52,7 @@ function paginatedResults(model) {
         limit: limit
       }
     }
-    results.results = model.slice(startIndex, endIndex)
+    results.results = await model.find().limit(limit).skip(startIndex).exec()
     res.paginatedResults = results
     next()
     }
